@@ -1,0 +1,195 @@
+
+import com.aetrion.flickr.Flickr;
+import com.aetrion.flickr.FlickrException;
+import com.aetrion.flickr.REST;
+import com.aetrion.flickr.RequestContext;
+import com.aetrion.flickr.auth.Auth;
+import com.aetrion.flickr.auth.AuthInterface;
+import com.aetrion.flickr.auth.Permission;
+import com.aetrion.flickr.photos.*;
+import com.aetrion.flickr.util.IOUtilities;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.imageio.ImageIO;
+import javax.swing.JFrame;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.SAXException;
+
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+/**
+ *
+ * @author jd
+ */
+public class Grabber extends Component
+{
+    protected Flickr f;
+    protected RequestContext requestContext;
+    protected String frob = "";
+    protected String token = "";
+    protected Properties properties = null;
+    protected String[] tagSet;
+    //protected BufferedImage img;
+    protected PhotoList photoList;
+    protected PhotosInterface photosInterface;
+    protected int h;
+    protected int w;
+    
+    public Grabber(String[] tagSet) throws ParserConfigurationException, IOException, SAXException, FlickrException
+    {
+        this.photoList = null;
+        this.tagSet = tagSet;
+        InputStream in = null;
+        try {
+            in = getClass().getResourceAsStream("/setup.properties");
+            properties = new Properties();
+            properties.load(in);
+
+            IOUtilities.close(in);
+
+            f = new Flickr(
+                    properties.getProperty("apiKey"),
+                    properties.getProperty("secret"),
+                    new REST());
+            Flickr.debugStream = false; // do we need this?
+//        requestContext = RequestContext.getRequestContext();
+
+            /*
+             * After setting up the Flickr interface, we need to set up the
+             * search parameters
+             */          
+        } catch (Exception ex) {            
+            System.out.println(ex.getCause().getMessage());
+            
+        }        
+    }
+    
+    public void getPhotos()
+    {
+        SearchParameters searchParams = new SearchParameters();
+        searchParams.setSort(SearchParameters.INTERESTINGNESS_DESC);
+
+        searchParams.setTags(this.tagSet);
+
+        this.photosInterface = f.getPhotosInterface();        
+        
+        try {
+            this.photoList = this.photosInterface.search(searchParams, 20, 1);
+        } catch (IOException ex) {
+            Logger.getLogger(Grabber.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SAXException ex) {
+            Logger.getLogger(Grabber.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (FlickrException ex) {
+            Logger.getLogger(Grabber.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        if (this.photoList == null) {
+            System.out.println("No photos matching those tags were found.");
+        } 
+        
+    }
+    
+    
+    
+    public void paint()
+    {
+        if (this.photoList != null) {
+            //Get search result and check the size of photo result
+            for (int i = 0; i < 5; i++) {
+                //get photo object
+                Photo photo = (Photo) this.photoList.get(i);
+                
+                
+                String id = photo.getId();
+                try {
+                    Collection c = this.photosInterface.getSizes(id);
+                    int hack = 0;
+                    
+                    for (Object o : c) {
+                        Size s = (Size) o;
+                        System.out.println(s.getHeight());
+                        w = s.getWidth();
+                        h = s.getHeight();
+                        
+                        if (++hack == 6) break;  // 6 is the magic number                                             
+                    }
+                    
+                } catch (IOException ex) {
+                    Logger.getLogger(Grabber.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (SAXException ex) {
+                    Logger.getLogger(Grabber.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (FlickrException ex) {
+                    Logger.getLogger(Grabber.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                
+                
+                
+                
+                
+                
+                String u = photo.getMediumUrl();
+                //System.out.println(u);
+                
+                
+                
+                
+                
+                //strBuf.append(photo.getSmallSquareUrl());
+                
+                
+                
+                //String str = strBuf.toString();
+                
+                //strBuf.append("strawberry.jpg");
+                
+                try {
+                    //BufferedImage img = ImageIO.read(new File(str));
+                    
+                    URL url = new URL(u);
+                    java.awt.Image img = Toolkit.getDefaultToolkit().createImage(url);                    
+                    
+                    JFrame frame = new JFrame("Display image");                    
+                    
+                    ImagePanel imgPanel = new ImagePanel(img);
+                    frame.getContentPane().add(imgPanel);
+                    frame.setSize(w, h);
+                    frame.setVisible(true);
+                    frame.setResizable(false);
+                    
+                    //Graphics g2 = img.getGraphics();
+                    //g2.drawImage(img, 0, 0, null);
+                } catch (IOException ex) {
+                    Logger.getLogger(Grabber.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                
+            }
+        }    
+    }
+        
+        
+        
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+}
